@@ -22,7 +22,7 @@ Public Class NewCategory
                 Exit Sub
             End If
 
-            Dim checkQuery As String = "SELECT COUNT(*) FROM tbl_category WHERE cate_name = @CategoryName"
+            Dim checkQuery As String = "SELECT COUNT(*) FROM tbl_category WHERE cate_name = @CategoryName or cate_order ='" & txt_order.Text & "' "
             Using checkCmd As New MySqlCommand(checkQuery, cn)
                 checkCmd.Parameters.AddWithValue("@CategoryName", txt_catname.Text)
 
@@ -32,12 +32,12 @@ Public Class NewCategory
 
                 Dim count As Integer = Convert.ToInt32(checkCmd.ExecuteScalar())
                 If count > 0 Then
-                    MsgBox("Category name already exists.")
+                    MsgBox("Category name or Category order are already exists.")
                     Exit Sub
                 End If
             End Using
 
-            sqltext = "INSERT INTO tbl_category (cate_name, cate_image,cate_status) VALUES ('" & txt_catname.Text & "',@proPhoto,'" & If(chkIsavailable.Checked = True, 1, 0) & "')"
+            sqltext = "INSERT INTO tbl_category (cate_order,cate_name, cate_image,cate_status) VALUES ('" & txt_order.Text & "','" & txt_catname.Text & "',@proPhoto,'" & If(chkIsavailable.Checked = True, 1, 0) & "')"
             Dim cmd As New MySqlCommand
             If cn.State <> ConnectionState.Open Then
                 cn.Open()
@@ -64,7 +64,7 @@ Public Class NewCategory
                 MsgBox("No category selected.")
                 Return
             End If
-            sqltext = "UPDATE tbl_category SET cate_name = '" & txt_catname.Text & "', cate_image = @proPhoto , cate_status = @cateStatus  WHERE cate_pk = '" & selectedCategoryTag & "'"
+            sqltext = "UPDATE tbl_category SET cate_order = '" & txt_order.Text & "', cate_name = '" & txt_catname.Text & "', cate_image = @proPhoto , cate_status = @cateStatus  WHERE cate_pk = '" & selectedCategoryTag & "'"
 
             Dim cmd As New MySqlCommand
             If cn.State <> ConnectionState.Open Then
@@ -113,12 +113,13 @@ Public Class NewCategory
                     dgCategory.Rows.Add()
                     dgCategory(0, i).Value = i + 1
                     dgCategory(0, i).Tag = objDataTableX(i)(0)
-                    dgCategory(1, i).Value = objDataTableX(i)("cate_name")
-                    dgCategory(2, i).Value = objDataTableX(i)("cate_image")
+                    dgCategory(2, i).Value = objDataTableX(i)("cate_name")
+                    dgCategory(1, i).Value = objDataTableX(i)("cate_order")
+                    dgCategory(3, i).Value = objDataTableX(i)("cate_image")
                     If objDataTableX(i)("cate_status") = 1 Then
-                        dgCategory(3, i).Value = CheckState.Checked
+                        dgCategory(4, i).Value = CheckState.Checked
                     Else
-                        dgCategory(3, i).Value = CheckState.Unchecked
+                        dgCategory(4, i).Value = CheckState.Unchecked
                     End If
                 Next
             Else
@@ -150,8 +151,9 @@ Public Class NewCategory
                 dgCategory.CurrentCell = dgCategory.Rows(e.RowIndex).Cells(0)
                 Dim dgv As DataGridViewRow = dgCategory.SelectedRows(0)
                 selectedCategoryTag = dgv.Cells(0).Tag
-                txt_catname.Text = dgv.Cells(1).Value.ToString()
-                Dim imageData As Byte() = TryCast(dgv.Cells(2).Value, Byte())
+                txt_order.Text = dgv.Cells(1).Value.ToString()
+                txt_catname.Text = dgv.Cells(2).Value.ToString()
+                Dim imageData As Byte() = TryCast(dgv.Cells(3).Value, Byte())
                 If imageData IsNot Nothing AndAlso imageData.Length > 0 Then
                     Using ms As New IO.MemoryStream(imageData)
                         imageBox.Image = Image.FromStream(ms)
@@ -159,7 +161,7 @@ Public Class NewCategory
                 Else
                     imageBox.Image = Nothing
                 End If
-                chkIsavailable.Checked = dgv.Cells(3).Value
+                chkIsavailable.Checked = dgv.Cells(4).Value
 
                 btn_add.Text = "UPDATE"
 

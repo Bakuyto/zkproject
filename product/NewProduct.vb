@@ -1,11 +1,78 @@
 ﻿Imports MySql.Data.MySqlClient
 Imports System.IO
+Imports System.IO.Ports
 
 Public Class NewProduct
+
+    Dim ttcontrols As Double = 0
+    Dim clickcount As Integer = 1
+    Dim limitrow As Integer = 20
+    Dim startinx As Integer = 0
+    Private selectedproductTag As Object
+
+
+    Private Sub handlerComport()
+        ' Set the COM port to a valid port
+        My.Settings.COMport = "COM3" ' Example COM port, change as needed
+
+        If Not SerialPort1.IsOpen Then
+            SerialPort1.PortName = My.Settings.COMport
+            SerialPort1.BaudRate = 9600
+            Try
+                ' Open the serial port
+                SerialPort1.Open()
+                AddHandler SerialPort1.DataReceived, AddressOf SerialPort_DataReceived
+            Catch ex As Exception
+                Console.WriteLine("Failed to open serial port: " & ex.Message)
+            End Try
+        Else
+            Try
+                ' Close the serial port
+                SerialPort1.Close()
+            Catch ex As Exception
+                Console.WriteLine("Failed to close the serial port: " & ex.Message)
+            End Try
+        End If
+    End Sub
+
+    Private Sub SerialPort_DataReceived(ByVal sender As Object, ByVal e As SerialDataReceivedEventArgs)
+        Try
+            Dim indata As String = SerialPort1.ReadExisting().Trim()
+
+            ' Use Invoke to update the UI on the main thread
+            Me.Invoke(Sub()
+                          If IsGroupBoxControlsEnabled() Then
+                              txt_barcode.Text = indata
+                          Else
+                              txt_search.Text = indata
+                          End If
+                      End Sub)
+        Catch ex As Exception
+            MsgBox(ex.Message)
+        End Try
+    End Sub
+
+    Private Function IsGroupBoxControlsEnabled() As Boolean
+        ' Assuming all controls in the GroupBox have the same enabled state
+        Return GroupBox1.Controls.Cast(Of Control)().Any(Function(ctrl) ctrl.Enabled)
+    End Function
+
+
     Private Sub NewProduct_Load(sender As Object, e As EventArgs) Handles MyBase.Load
         setConnection()
         Load_Category()
         Load_Table()
+        handlerComport()
+        DisableGroupBoxControls()
+    End Sub
+
+    Private Sub DisableGroupBoxControls()
+        For Each ctrl As Control In GroupBox1.Controls
+            ctrl.Enabled = False
+
+            btn_add.Enabled = False
+        Next
+        txt_search.Enabled = True
     End Sub
 
     Private Sub Load_Category()
@@ -17,7 +84,7 @@ Public Class NewProduct
         End Try
     End Sub
 
-    Private Sub btn_browse_Click(sender As Object, e As EventArgs) Handles btn_browse.Click
+    Private Sub btn_browse_Click(sender As Object, e As EventArgs) 
         Dim myStream As Stream = Nothing
         Dim openFile As New OpenFileDialog()
 
@@ -48,7 +115,37 @@ Public Class NewProduct
     Private Sub addproduct()
         Try
 
-            Dim selectedCategoryId As Integer = CInt(com_category.SelectedValue)
+            ' Validate that all necessary fields are filled
+            If String.IsNullOrWhiteSpace(txt_proname.Text) OrElse String.IsNullOrWhiteSpace(txt_barcode.Text) OrElse String.IsNullOrWhiteSpace(txt_qty.Text) OrElse String.IsNullOrWhiteSpace(txt_price.Text) OrElse String.IsNullOrWhiteSpace(txt_stock.Text) Then
+                MsgBox("Please fill out all required fields.")
+                Exit Sub
+            End If
+
+            ' Convert and validate numeric fields
+            Dim selectedproductId As Integer
+            If Not Integer.TryParse(com_category.SelectedValue.ToString(), selectedproductId) Then
+                MsgBox("Invalid category selected.")
+                Exit Sub
+            End If
+
+            Dim quantity As Integer
+            If Not Integer.TryParse(txt_qty.Text, quantity) Then
+                MsgBox("Invalid quantity.")
+                Exit Sub
+            End If
+
+            Dim price As Decimal
+            If Not Decimal.TryParse(txt_price.Text, price) Then
+                MsgBox("Invalid price.")
+                Exit Sub
+            End If
+
+            Dim stock As Integer
+            If Not Integer.TryParse(txt_stock.Text, stock) Then
+                MsgBox("Invalid stock.")
+                Exit Sub
+            End If
+
             sqltext = "CALL Insert_product( @cateFk ,'" & txt_proname.Text & "' , '" & txt_barcode.Text & "', @proPhoto , '" & txt_qty.Text & "', '" & txt_price.Text & "' , '" & txt_stock.Text & "','" & If(ischkavailable.Checked = True, 1, 0) & "', '" & txt_dis.Text & "')"
             Dim cmd As New MySqlCommand
             If cn.State <> ConnectionState.Open Then
@@ -57,7 +154,7 @@ Public Class NewProduct
             With cmd
                 .CommandText = sqltext
                 .Connection = cn
-                .Parameters.AddWithValue("@cateFk", selectedCategoryId)
+                .Parameters.AddWithValue("@cateFk", selectedproductId)
                 .Parameters.AddWithValue("@proPhoto", ImageToBinary(New Bitmap(imageBox.Image, 200, 150)))
             End With
             cmd.ExecuteNonQuery()
@@ -78,7 +175,7 @@ Public Class NewProduct
 
     Private Sub EDIT()
         Try
-            sqltext = "UPDATE tbl_product SET cate_fk = '" & com_category.SelectedValue & "' , pro_name = '" & txt_proname.Text & "', pro_img = @proPhoto , barcode = '" & txt_barcode.Text & "' , pro_qty = '" & txt_qty.Text & "' , pro_price = '" & txt_price.Text & "', pro_stock = '" & txt_stock.Text & "' , pro_status = @proStatus , dis_percentage = '" & txt_dis.Text & "' WHERE product_pk = '" & selectedproductTag & "' "
+            sqltext = "UPDATE tbl_product SET cate_fk = '" & com_category.SelectedValue & "' , pro_name = '" & txt_proname.Text & "', pro_img = @proPhoto , barcode = '" & txt_barcode.Text & "' , pro_qty = '" & txt_qty.Text & "' , pro_price = '" & txt_price.Text & "', pro_status = @proStatus , dis_percentage = '" & txt_dis.Text & "' WHERE product_pk = '" & selectedproductTag & "' "
 
             Dim cmd As New MySqlCommand
             If cn.State <> ConnectionState.Open Then
@@ -132,22 +229,33 @@ Public Class NewProduct
 
     Private Sub btn_clear_Click(sender As Object, e As EventArgs) Handles btn_clear.Click
         clear()
+        DisableGroupBoxControls()
     End Sub
 
-    Private Sub ButtonX1_Click(sender As Object, e As EventArgs) Handles ButtonX1.Click
+    Private Sub ButtonX1_Click(sender As Object, e As EventArgs) 
         NewCategory.ShowDialog()
         Load_Category()
     End Sub
 
     Private Sub Load_Table()
-        sqltext = "CALL Load_Product();"
-        fillDataTableX(sqltext)
-        dgproduct.Rows.Clear()
         Try
+            Dim str As String = "SELECT COUNT(*) FROM tbl_product"
+            ttcontrols = runFunctionCommandText(str)
+
+            If ttcontrols < limitrow Then
+                lbTotalRows.Text = ttcontrols & " of " & ttcontrols
+            Else
+                lbTotalRows.Text = startinx + 1 & " - " & Math.Min(startinx + limitrow, ttcontrols) & " of " & ttcontrols
+            End If
+
+            sqltext = "CALL Load_Product(" & startinx & "," & limitrow & ");"
+            fillDataTableX(sqltext)
+            dgproduct.Rows.Clear()
+
             If objDataTableX.Rows.Count > 0 Then
                 For i = 0 To objDataTableX.Rows.Count - 1
                     dgproduct.Rows.Add()
-                    dgproduct(0, i).Value = i + 1
+                    dgproduct(0, i).Value = startinx + i + 1
                     dgproduct(0, i).Tag = objDataTableX(i)(0)
                     dgproduct(1, i).Value = objDataTableX(i)("pro_img")
                     dgproduct(2, i).Value = objDataTableX(i)("pro_name")
@@ -155,17 +263,13 @@ Public Class NewProduct
                     dgproduct(4, i).Value = objDataTableX(i)("barcode")
                     dgproduct(5, i).Value = objDataTableX(i)("pro_qty")
                     dgproduct(6, i).Value = objDataTableX(i)("pro_price")
-                    dgproduct(7, i).Value = objDataTableX(i)("pro_stock")
-                    dgproduct(8, i).Value = objDataTableX(i)("dis_percentage")
-                    If objDataTableX(i)("pro_status") = 1 Then
-                        dgproduct(9, i).Value = CheckState.Checked
-                    Else
-                        dgproduct(9, i).Value = CheckState.Unchecked
-                    End If
+                    dgproduct(7, i).Value = objDataTableX(i)("dis_percentage")
+                    dgproduct(8, i).Value = If(objDataTableX(i)("pro_status") = 1, CheckState.Checked, CheckState.Unchecked)
                 Next
             Else
                 MsgBox("There is no item found. Start add new today.")
             End If
+
             If My.Settings.showpicture Then
                 showpicture.Checked = True
                 adjustrowhight(dgproduct, 60)
@@ -180,7 +284,6 @@ Public Class NewProduct
         End Try
     End Sub
 
-    Private selectedproductTag As Object
     Private Sub dgproduct_CellContentClick(sender As Object, e As DataGridViewCellEventArgs) Handles dgproduct.CellContentClick
         Try
             ' Check if the clicked column is "btn_edit"
@@ -203,9 +306,8 @@ Public Class NewProduct
                 txt_barcode.Text = dgv.Cells(4).Value.ToString()
                 txt_qty.Text = dgv.Cells(5).Value.ToString()
                 txt_price.Text = dgv.Cells(6).Value.ToString()
-                txt_stock.Text = dgv.Cells(7).Value.ToString()
-                txt_dis.Text = dgv.Cells(8).Value.ToString()
-                ischkavailable.Checked = dgv.Cells(9).Value
+                txt_dis.Text = dgv.Cells(7).Value.ToString()
+                ischkavailable.Checked = dgv.Cells(8).Value
 
                 btn_add.Text = "UPDATE"
 
@@ -253,46 +355,47 @@ Public Class NewProduct
 
     Private Sub search()
         Try
-            Dim pname As String = txt_search.Text.Trim()
-            Dim pcode As String = txt_search.Text.Trim()
+            Dim searchText As String = If(txt_search?.Text?.Trim(), String.Empty)
 
-            ' Check if pname and pcode are empty, then set them to "%" to retrieve all records
-            If pname = "" Then pname = "%"
-            If pcode = "" Then pcode = "%"
-
-            sqltext = "CALL st_product('" & pname & "', '" & pcode & "')"
-
-            ' Execute the SQL query and fill the data table
-            fillDataTableX(sqltext)
-
-            ' Clear existing rows in the DataGridView
-            dgproduct.Rows.Clear()
-
-            ' Populate the DataGridView with the fetched data
-            If objDataTableX.Rows.Count > 0 Then
-                For i = 0 To objDataTableX.Rows.Count - 1
-                    dgproduct.Rows.Add()
-                    dgproduct(0, i).Value = i + 1
-                    dgproduct(0, i).Tag = objDataTableX(i)(0)
-                    dgproduct(1, i).Value = objDataTableX(i)("pro_img")
-                    dgproduct(2, i).Value = objDataTableX(i)("pro_name")
-                    dgproduct(3, i).Value = objDataTableX(i)("cate_name")
-                    dgproduct(4, i).Value = objDataTableX(i)("barcode")
-                    dgproduct(5, i).Value = objDataTableX(i)("pro_qty")
-                    dgproduct(6, i).Value = objDataTableX(i)("pro_price")
-                    dgproduct(7, i).Value = objDataTableX(i)("pro_stock")
-                    dgproduct(8, i).Value = objDataTableX(i)("dis_percentage")
-                    If objDataTableX(i)("pro_status") = 1 Then
-                        dgproduct(9, i).Value = CheckState.Checked
-                    Else
-                        dgproduct(9, i).Value = CheckState.Unchecked
-                    End If
-                Next
-            Else
-                MsgBox("There is no item found. Start add new today.")
+            If searchText = "" Then
+                Load_Table()
+                Return
             End If
 
-            ' Adjust DataGridView based on settings
+            Dim sqltext As String = "CALL st_product(@pname, @pcode)"
+
+            Using cmd As New MySqlCommand(sqltext, cn)
+                cmd.Parameters.Clear()
+
+                cmd.Parameters.AddWithValue("@pname", "%" & searchText & "%")
+                cmd.Parameters.AddWithValue("@pcode", "%" & searchText & "%")
+
+                Using adapter As New MySqlDataAdapter(cmd)
+                    Dim objDataTableX As New DataTable()
+                    adapter.Fill(objDataTableX)
+
+                    dgproduct.Rows.Clear()
+
+                    If objDataTableX.Rows.Count > 0 Then
+                        For i As Integer = 0 To objDataTableX.Rows.Count - 1
+                            dgproduct.Rows.Add()
+                            dgproduct(0, i).Value = i + 1
+                            dgproduct(0, i).Value = startinx + i + 1
+                            dgproduct(1, i).Value = objDataTableX(i)("pro_img")
+                            dgproduct(2, i).Value = objDataTableX(i)("pro_name")
+                            dgproduct(3, i).Value = objDataTableX(i)("cate_name")
+                            dgproduct(4, i).Value = objDataTableX(i)("barcode")
+                            dgproduct(5, i).Value = objDataTableX(i)("pro_qty")
+                            dgproduct(6, i).Value = objDataTableX(i)("pro_price")
+                            dgproduct(7, i).Value = objDataTableX(i)("dis_percentage")
+                            dgproduct(8, i).Value = If(objDataTableX(i)("pro_status") = 1, CheckState.Checked, CheckState.Unchecked)
+                        Next
+                    Else
+                        MsgBox("There is no item found. Start add new today.")
+                    End If
+                End Using
+            End Using
+
             If My.Settings.showpicture Then
                 showpicture.Checked = True
                 adjustrowhight(dgproduct, 60)
@@ -307,4 +410,57 @@ Public Class NewProduct
         End Try
     End Sub
 
+
+
+    Private Sub btn_next_Click(sender As Object, e As EventArgs) Handles btn_next.Click
+        Try
+            clickcount += 1
+            If limitrow * clickcount - limitrow >= ttcontrols Then
+                clickcount -= 1
+            End If
+            startinx = (clickcount - 1) * limitrow
+            Load_Table()
+            If startinx + limitrow > ttcontrols Then
+                lbTotalRows.Text = ttcontrols & " of " & ttcontrols
+            Else
+                lbTotalRows.Text = startinx + 1 & " - " & Math.Min(startinx + limitrow, ttcontrols) & " of " & ttcontrols
+            End If
+        Catch ex As Exception
+            MsgBox(ex.Message)
+        End Try
+    End Sub
+
+    Private Sub btn_prev_Click(sender As Object, e As EventArgs) Handles btn_prev.Click
+        Try
+            clickcount -= 1
+            If clickcount < 1 Then
+                clickcount = 1
+            End If
+            startinx = (clickcount - 1) * limitrow
+            Load_Table()
+            If clickcount = 1 Then
+                If ttcontrols < limitrow Then
+                    lbTotalRows.Text = ttcontrols & " of " & ttcontrols
+                Else
+                    lbTotalRows.Text = limitrow & " of " & ttcontrols
+                End If
+            Else
+                lbTotalRows.Text = startinx + 1 & " - " & Math.Min(startinx + limitrow, ttcontrols) & " of " & ttcontrols
+            End If
+        Catch ex As Exception
+            MsgBox(ex.Message)
+        End Try
+    End Sub
+
+    Private Sub ButtonX2_Click(sender As Object, e As EventArgs) Handles ButtonX2.Click
+        EnableGroupBoxControls()
+    End Sub
+
+    Private Sub EnableGroupBoxControls()
+        For Each ctrl As Control In GroupBox1.Controls
+            ctrl.Enabled = True
+            btn_add.Enabled = True
+        Next
+        txt_search.Enabled = False
+    End Sub
 End Class

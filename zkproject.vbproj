@@ -46,7 +46,30 @@
   <PropertyGroup>
     <OptionInfer>On</OptionInfer>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|x86'">
+    <DebugSymbols>true</DebugSymbols>
+    <DefineDebug>true</DefineDebug>
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\x86\Debug\</OutputPath>
+    <DocumentationFile>zkproject.xml</DocumentationFile>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <DebugType>full</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|x86'">
+    <DefineTrace>true</DefineTrace>
+    <OutputPath>bin\x86\Release\</OutputPath>
+    <DocumentationFile>zkproject.xml</DocumentationFile>
+    <Optimize>true</Optimize>
+    <NoWarn>42016,41999,42017,42018,42019,42032,42036,42020,42021,42022</NoWarn>
+    <DebugType>pdbonly</DebugType>
+    <PlatformTarget>x86</PlatformTarget>
+    <Prefer32Bit>true</Prefer32Bit>
+  </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DevComponents.DotNetBar.Keyboard, Version=14.1.0.0, Culture=neutral, PublicKeyToken=7eb7c3a35b91de04, processorArchitecture=MSIL" />
+    <Reference Include="DevComponents.DotNetBar.Layout, Version=14.1.0.0, Culture=neutral, PublicKeyToken=7eb7c3a35b91de04, processorArchitecture=MSIL" />
     <Reference Include="DevComponents.DotNetBar.Schedule, Version=14.1.0.0, Culture=neutral, PublicKeyToken=7eb7c3a35b91de04, processorArchitecture=MSIL" />
     <Reference Include="DevComponents.DotNetBar2, Version=14.1.0.0, Culture=neutral, PublicKeyToken=7eb7c3a35b91de04, processorArchitecture=MSIL" />
     <Reference Include="MySql.Data, Version=6.9.10.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d, processorArchitecture=MSIL">
@@ -56,6 +79,7 @@
     <Reference Include="System" />
     <Reference Include="System.Data" />
     <Reference Include="System.Deployment" />
+    <Reference Include="System.DirectoryServices" />
     <Reference Include="System.Drawing" />
     <Reference Include="System.Windows.Forms" />
     <Reference Include="System.Xml" />
@@ -90,6 +114,12 @@
     <Compile Include="category\Testing.vb">
       <SubType>Form</SubType>
     </Compile>
+    <Compile Include="components\widget.Designer.vb">
+      <DependentUpon>widget.vb</DependentUpon>
+    </Compile>
+    <Compile Include="components\widget.vb">
+      <SubType>UserControl</SubType>
+    </Compile>
     <Compile Include="Form1.Designer.vb">
       <DependentUpon>Form1.vb</DependentUpon>
     </Compile>
@@ -100,6 +130,18 @@
       <DependentUpon>frmConnection.vb</DependentUpon>
     </Compile>
     <Compile Include="frmConnection.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="help\keypad.Designer.vb">
+      <DependentUpon>keypad.vb</DependentUpon>
+    </Compile>
+    <Compile Include="help\keypad.vb">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="Main\frmMain.Designer.vb">
+      <DependentUpon>frmMain.vb</DependentUpon>
+    </Compile>
+    <Compile Include="Main\frmMain.vb">
       <SubType>Form</SubType>
     </Compile>
     <Compile Include="module\general.vb" />
@@ -133,11 +175,20 @@
     <EmbeddedResource Include="category\Testing.resx">
       <DependentUpon>Testing.vb</DependentUpon>
     </EmbeddedResource>
+    <EmbeddedResource Include="components\widget.resx">
+      <DependentUpon>widget.vb</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="Form1.resx">
       <DependentUpon>Form1.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="frmConnection.resx">
       <DependentUpon>frmConnection.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="help\keypad.resx">
+      <DependentUpon>keypad.vb</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Main\frmMain.resx">
+      <DependentUpon>frmMain.vb</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="My Project\Resources.resx">
       <Generator>VbMyResourcesResXFileCodeGenerator</Generator>
@@ -165,5 +216,6 @@
     <Content Include="MySql.Data.dll" />
     <None Include="ZKico\upload_image.png" />
   </ItemGroup>
+  <ItemGroup />
   <Import Project="$(MSBuildToolsPath)\Microsoft.VisualBasic.targets" />
 </Project>

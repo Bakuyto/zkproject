@@ -2,6 +2,7 @@
 Imports System.Net.NetworkInformation
 Imports DevComponents.DotNetBar
 Imports MySql.Data.MySqlClient
+Imports DevComponents.DotNetBar.Controls
 
 Public Module general
     Public cn As MySqlConnection
@@ -340,4 +341,6 @@ Public Module general
         runCommandText(sqlSave)
     End Sub
 #End Region
+
+
 End Module

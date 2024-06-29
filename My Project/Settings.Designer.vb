@@ -65,6 +65,90 @@ Namespace My
                 Me("showpicture") = value
             End Set
         End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("10")>  _
+        Public Property columnsmargin() As Double
+            Get
+                Return CType(Me("columnsmargin"),Double)
+            End Get
+            Set
+                Me("columnsmargin") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("10")>  _
+        Public Property rowsmargin() As Double
+            Get
+                Return CType(Me("rowsmargin"),Double)
+            End Get
+            Set
+                Me("rowsmargin") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("3")>  _
+        Public Property viewrows() As Integer
+            Get
+                Return CType(Me("viewrows"),Integer)
+            End Get
+            Set
+                Me("viewrows") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("5")>  _
+        Public Property viewcolumns() As Integer
+            Get
+                Return CType(Me("viewcolumns"),Integer)
+            End Get
+            Set
+                Me("viewcolumns") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("False")>  _
+        Public Property quicksale() As Boolean
+            Get
+                Return CType(Me("quicksale"),Boolean)
+            End Get
+            Set
+                Me("quicksale") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("0")>  _
+        Public Property exchangeRate() As Decimal
+            Get
+                Return CType(Me("exchangeRate"),Decimal)
+            End Get
+            Set
+                Me("exchangeRate") = value
+            End Set
+        End Property
+        
+        <Global.System.Configuration.UserScopedSettingAttribute(),  _
+         Global.System.Diagnostics.DebuggerNonUserCodeAttribute(),  _
+         Global.System.Configuration.DefaultSettingValueAttribute("")>  _
+        Public Property COMport() As String
+            Get
+                Return CType(Me("COMport"),String)
+            End Get
+            Set
+                Me("COMport") = value
+            End Set
+        End Property
     End Class
 End Namespace
 
